@@ -1,0 +1,179 @@
+@font-face {
+  font-family: 'MullerLight';
+  src: url('/assets/fonts/MullerLight.woff');
+}
+
+@font-face {
+  font-family: 'Muller';
+  src: url('/assets/fonts/MullerRegular.woff');
+}
+
+@font-face {
+  font-family: 'MullerBold';
+  src: url('/assets/fonts/MullerBold.woff');
+}
+
+* {
+  font-family: "Muller";
+  font-size: 14px;
+}
+
+/*Убрать полосу прокрутки для всей страницы*/
+::-webkit-scrollbar {
+  width: 0;
+}
+
+:root {
+  --brand-color: #0064b4;
+  --brand-color-rgb: rgba(0, 100, 180, .8);
+  --brand-hover-color: #212b68;
+  --brand-two-color: #0099e6;
+  --white-color: #f3f3f3;
+}
+
+.main {
+  background-size: 20em;
+  border-spacing: 0;
+  overflow: hidden;
+  background-color: #0064b4;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+}
+
+.Login {
+  position: absolute;
+  left: 50%;
+  top: 40%;
+  transform: translate(-50%, -50%);
+}
+
+.heading-section {
+  color: #fff;
+}
+
+.form-group {
+  padding-bottom: .8em;
+}
+
+.form-control {
+  display: block;
+  width: 100%;
+  height: 50px;
+  padding: .375rem .75rem;
+  font-family: 'Muller';
+  font-size: 1rem;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.8);
+  line-height: 1.5;
+  background: rgba(255, 255, 255, 0.08);
+  background-clip: padding-box;
+  border: 1px solid transparent;
+  border-radius: 40px;
+  transition: 0.3s ease-in-out;
+}
+
+  .form-control::placeholder {
+    color: rgba(255, 255, 255, 0.8) !important;
+  }
+
+  .form-control:hover,
+  .form-control:focus {
+    background: transparent;
+    outline: none;
+    box-shadow: none;
+    color: rgba(255, 255, 255, 0.8);
+    border-color: rgba(255, 255, 255, 0.4);
+  }
+
+  .form-control:focus {
+    border-color: rgba(255, 255, 255, 0.4);
+  }
+
+.btn {
+  display: inline-block;
+  cursor: pointer;
+  font-weight: 400;
+  text-align: center;
+  vertical-align: middle;
+  user-select: none;
+  background-color: transparent;
+  border: 1px solid transparent;
+  padding: .375rem .75rem;
+  font-size: 1rem;
+  line-height: 1.5;
+  border-radius: 40px;
+  transition: color .15s ease-in-out, background-color .15s ease-in-out, border-color .15s ease-in-out, box-shadow .15s ease-in-out;
+  box-shadow: none !important;
+  font-size: 15px;
+  text-transform: uppercase;
+}
+
+  .btn:hover,
+  .btn:active,
+  .btn:focus {
+    outline: none;
+  }
+
+  .btn.btn-primary {
+    background: #009be6 !important;
+    color: #f3f3f3 !important;
+  }
+
+    .btn.btn-primary:hover {
+      border: 1px solid #f3f3f3;
+      background: transparent !important;
+      color: #212b68;
+    }
+
+  .btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+.error-message .alert {
+  background: rgba(220, 53, 69, 0.9);
+  border: none;
+  border-radius: 40px;
+  color: white;
+  padding: 10px 20px;
+}
+
+/* Адаптивность */
+@media only screen and (max-width: 768px) {
+  .main_logo img {
+    position: absolute;
+    top: 0%;
+    left: auto;
+    width: auto;
+  }
+
+  .Login {
+    position: relative;
+    left: auto;
+    top: auto;
+    transform: none;
+    padding-top: 2rem;
+  }
+
+  .stemi-avt img {
+    width: 280px !important;
+    height: auto !important;
+  }
+}
+
+@media only screen and (max-width: 600px) {
+  .main_logo img {
+    top: 4em;
+    left: 4em;
+    width: 75vw;
+  }
+
+  .container {
+    padding: 0 15px;
+  }
+
+  .col-md-10 {
+    padding: 0;
+  }
+}
