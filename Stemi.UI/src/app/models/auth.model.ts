@@ -1,6 +1,7 @@
 export interface LoginRequest {
   email: string;
   password: string;
+  role?: string; // Добавляем роль для демо
 }
 
 export interface LoginResponse {
@@ -9,6 +10,7 @@ export interface LoginResponse {
   userId: string;
   userName: string;
   roles: string[];
+  email: string;
 }
 
 export interface User {
@@ -24,4 +26,11 @@ export interface RegisterRequest {
   userName: string;
   firstName: string;
   lastName: string;
+  role: string;
+}
+
+// Роли системы
+export enum UserRole {
+  STUDENT = 'student',
+  ADMIN = 'admin'
 }

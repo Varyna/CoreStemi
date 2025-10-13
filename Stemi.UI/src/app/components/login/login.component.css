@@ -1,179 +1,427 @@
-@font-face {
-  font-family: 'MullerLight';
-  src: url('/assets/fonts/MullerLight.woff');
-}
-
-@font-face {
-  font-family: 'Muller';
-  src: url('/assets/fonts/MullerRegular.woff');
-}
-
-@font-face {
-  font-family: 'MullerBold';
-  src: url('/assets/fonts/MullerBold.woff');
-}
-
-* {
-  font-family: "Muller";
-  font-size: 14px;
-}
-
-/*Убрать полосу прокрутки для всей страницы*/
-::-webkit-scrollbar {
-  width: 0;
-}
-
-:root {
-  --brand-color: #0064b4;
-  --brand-color-rgb: rgba(0, 100, 180, .8);
-  --brand-hover-color: #212b68;
-  --brand-two-color: #0099e6;
-  --white-color: #f3f3f3;
-}
-
 .main {
-  background-size: 20em;
-  border-spacing: 0;
-  overflow: hidden;
-  background-color: #0064b4;
-  min-height: 100vh;
   margin: 0;
   padding: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(135deg, #0064b4 0%, #0099e6 100%);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.Login {
-  position: absolute;
-  left: 50%;
-  top: 40%;
-  transform: translate(-50%, -50%);
+.login-container {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.heading-section {
-  color: #fff;
+/* Основной контент справа */
+.login-content {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 450px;
+
+  margin-right: 15%;
+  padding: 2rem;
+  text-align: center;
+}
+
+/* Логотип в шапке */
+.header-logo {
+  margin-bottom: 1.5rem;
+}
+
+  .header-logo img {
+    max-width: 180px;
+    height: auto;
+  }
+
+/* Информация о системе */
+.system-info {
+  margin-bottom: 2rem;
+  color: white;
+}
+
+.brand-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem 0;
+  text-shadow: 2px 2px 8px rgba(0,0,0,0.3);
+}
+
+.brand-subtitle {
+  font-size: 1.1rem;
+  opacity: 0.95;
+  margin: 0;
+  font-weight: 300;
+  text-shadow: 1px 1px 4px rgba(0,0,0,0.2);
+}
+
+/* Карточка авторизации */
+.login-card {
+  background: white;
+  border-radius: 20px;
+  padding: 2.5rem;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  margin-bottom: 2rem;
+}
+
+.card-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.welcome-title {
+  color: #0064b4;
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem 0;
+}
+
+.welcome-subtitle {
+  color: #666;
+  font-size: 1rem;
+  margin: 0;
+  opacity: 0.8;
+}
+
+/* Форма */
+.login-form {
+  margin-bottom: 1.5rem;
 }
 
 .form-group {
-  padding-bottom: .8em;
+  position: relative;
+  margin-bottom: 1.5rem;
+}
+
+.form-label {
+  display: block;
+  color: #333;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+  text-align: left;
 }
 
 .form-control {
-  display: block;
   width: 100%;
-  height: 50px;
-  padding: .375rem .75rem;
-  font-family: 'Muller';
+  padding: 1rem 1rem 1rem 3rem;
+  border: 2px solid #e1e5e9;
+  border-radius: 12px;
   font-size: 1rem;
-  font-weight: 400;
-  color: rgba(255, 255, 255, 0.8);
-  line-height: 1.5;
-  background: rgba(255, 255, 255, 0.08);
-  background-clip: padding-box;
-  border: 1px solid transparent;
-  border-radius: 40px;
-  transition: 0.3s ease-in-out;
+  transition: all 0.3s ease;
+  background: #fff;
+  box-sizing: border-box;
 }
+
+  .form-control:focus {
+    outline: none;
+    border-color: #0064b4;
+    box-shadow: 0 0 0 3px rgba(0, 100, 180, 0.1);
+  }
 
   .form-control::placeholder {
-    color: rgba(255, 255, 255, 0.8) !important;
+    color: #a0a4a8;
   }
 
-  .form-control:hover,
-  .form-control:focus {
-    background: transparent;
-    outline: none;
-    box-shadow: none;
-    color: rgba(255, 255, 255, 0.8);
-    border-color: rgba(255, 255, 255, 0.4);
-  }
-
-  .form-control:focus {
-    border-color: rgba(255, 255, 255, 0.4);
-  }
-
-.btn {
-  display: inline-block;
-  cursor: pointer;
-  font-weight: 400;
-  text-align: center;
-  vertical-align: middle;
-  user-select: none;
-  background-color: transparent;
-  border: 1px solid transparent;
-  padding: .375rem .75rem;
-  font-size: 1rem;
-  line-height: 1.5;
-  border-radius: 40px;
-  transition: color .15s ease-in-out, background-color .15s ease-in-out, border-color .15s ease-in-out, box-shadow .15s ease-in-out;
-  box-shadow: none !important;
-  font-size: 15px;
-  text-transform: uppercase;
+.form-icon {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #a0a4a8;
+  transition: color 0.3s ease;
 }
 
-  .btn:hover,
-  .btn:active,
-  .btn:focus {
-    outline: none;
+.form-control:focus + .form-icon {
+  color: #0064b4;
+}
+
+/* Кнопка входа */
+.login-btn {
+  width: 100%;
+  padding: 1rem;
+  background: linear-gradient(135deg, #0064b4 0%, #0099e6 100%);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 0.5rem;
+}
+
+  .login-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(0, 100, 180, 0.3);
   }
 
-  .btn.btn-primary {
-    background: #009be6 !important;
-    color: #f3f3f3 !important;
-  }
-
-    .btn.btn-primary:hover {
-      border: 1px solid #f3f3f3;
-      background: transparent !important;
-      color: #212b68;
-    }
-
-  .btn:disabled {
+  .login-btn:disabled {
     opacity: 0.6;
     cursor: not-allowed;
+    transform: none;
   }
 
-.error-message .alert {
-  background: rgba(220, 53, 69, 0.9);
-  border: none;
-  border-radius: 40px;
+.loading-spinner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+/* Демо подсказка */
+.demo-hint {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border: 1px solid #dee2e6;
+  border-radius: 12px;
+  padding: 1rem;
+  margin-top: 1.5rem;
+}
+
+.hint-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #0064b4;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  justify-content: center;
+}
+
+.hint-content {
+  font-size: 0.85rem;
+}
+
+.demo-account {
+  padding: 0.3rem 0;
+  color: #495057;
+}
+
+  .demo-account strong {
+    color: #0064b4;
+  }
+
+/* Сообщение об ошибке */
+.error-message {
+  background: #f8d7da;
+  color: #721c24;
+  padding: 1rem;
+  border-radius: 12px;
+  border: 1px solid #f5c6cb;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  justify-content: center;
+}
+
+/* Футер карточки */
+.card-footer {
+  text-align: center;
+  padding-top: 1rem;
+  border-top: 1px solid #e1e5e9;
+}
+
+.support-text {
+  color: #6c757d;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.support-link {
+  color: #0064b4;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+  .support-link:hover {
+    text-decoration: underline;
+  }
+
+/* Особенности системы */
+.features-section {
+  margin-top: 2rem;
+}
+
+.features-list {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.feature-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 1rem;
   color: white;
-  padding: 10px 20px;
+  opacity: 0.9;
+  transition: all 0.3s ease;
+  padding: 0.8rem 1.2rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+}
+
+  .feature-item:hover {
+    opacity: 1;
+    background: rgba(255, 255, 255, 0.15);
+    transform: translateY(-2px);
+  }
+
+  .feature-item i {
+    font-size: 1.3rem;
+    width: 25px;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.9);
+  }
+
+/* Анимации */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(-50%) scale(1) rotate(0deg);
+  }
+
+  33% {
+    transform: translateY(-52%) scale(1.02) rotate(1deg);
+  }
+
+  66% {
+    transform: translateY(-48%) scale(0.98) rotate(-1deg);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(50px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.login-content {
+  animation: slideInRight 0.8s ease-out;
 }
 
 /* Адаптивность */
-@media only screen and (max-width: 768px) {
-  .main_logo img {
-    position: absolute;
-    top: 0%;
-    left: auto;
-    width: auto;
+@media (max-width: 1200px) {
+  .background-logo {
+    left: 5%;
   }
 
-  .Login {
+  .bg-logo {
+    max-width: 400px;
+    max-height: 400px;
+  }
+
+  .login-content {
+    margin-right: 10%;
+  }
+}
+
+@media (max-width: 992px) {
+  .background-logo {
+    left: 3%;
+  }
+
+  .bg-logo {
+    max-width: 350px;
+    max-height: 350px;
+  }
+
+  .login-content {
+    margin-right: 8%;
+  }
+}
+
+@media (max-width: 768px) {
+  .login-container {
+    flex-direction: column;
+    justify-content: flex-start;
+    padding-top: 2rem;
+  }
+
+  .background-logo {
     position: relative;
     left: auto;
     top: auto;
     transform: none;
-    padding-top: 2rem;
+    margin-bottom: 1rem;
   }
 
-  .stemi-avt img {
-    width: 280px !important;
-    height: auto !important;
+  .bg-logo {
+    max-width: 250px;
+    max-height: 250px;
+    opacity: 0.2;
+  }
+
+  .login-content {
+    margin: 0 auto;
+    max-width: 400px;
+    padding: 1rem;
+  }
+
+  .brand-title {
+    font-size: 2.2rem;
+  }
+
+  .brand-subtitle {
+    font-size: 1rem;
+  }
+
+  .login-card {
+    padding: 2rem 1.5rem;
+  }
+
+  .features-list {
+    gap: 1rem;
+  }
+
+  .feature-item {
+    font-size: 0.9rem;
+    padding: 0.6rem 1rem;
   }
 }
 
-@media only screen and (max-width: 600px) {
-  .main_logo img {
-    top: 4em;
-    left: 4em;
-    width: 75vw;
+@media (max-width: 480px) {
+  .login-content {
+    max-width: 350px;
+    padding: 1rem;
   }
 
-  .container {
-    padding: 0 15px;
+  .login-card {
+    padding: 1.5rem 1rem;
+    border-radius: 16px;
   }
 
-  .col-md-10 {
-    padding: 0;
+  .brand-title {
+    font-size: 2rem;
+  }
+
+  .features-list {
+    flex-direction: column;
+    gap: 0.8rem;
+  }
+
+  .feature-item {
+    justify-content: center;
+  }
+
+  .bg-logo {
+    max-width: 200px;
+    max-height: 200px;
   }
 }

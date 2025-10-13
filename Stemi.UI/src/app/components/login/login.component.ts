@@ -11,82 +11,120 @@ import { LoginRequest } from '../../models/auth.model';
   imports: [CommonModule, FormsModule],
   template: `
     <body class="main">
-      <div class="main_logo">
-        <img class="img-fluid mx-auto" src="assets/img/logo_w.png" />
-      </div>
-      <div class="Login pt-5 d-flex justify-content-center">
-        <section class="ftco-section pt-5">
-          <div class="stemi-avt pt-5 pb-5 mx-4">
-            <a href="https://technicum.info/">
-              <img src="assets/img/logo_stemi.png" width="360" height="90" />
-            </a>
+      <div class="login-container">
+        <!-- Фоновый логотип слева -->
+        <div class="background-logo">
+          <img src="assets/img/logo_w.png" class="bg-logo" alt="СТЭМИ">
+        </div>
+        <!-- Основной контент справа -->
+        <div class="login-content">
+          <!-- Логотип в шапке -->
+          <div class="header-logo">
+            <img src="assets/img/logo_stemi.png" alt="СТЭМИ">
           </div>
-          <div class="container">
-            <div class="row justify-content-center">
-              <div class="col-md-12 text-center mb-5">
-                <h2 class="heading-section fw-bold">Войдите через аккаунт СТЭМИ</h2>
-              </div>
+          <!-- Карточка авторизации -->
+          <div class="login-card">
+            <div class="card-header">
+              <h2 class="welcome-title">Добро пожаловать</h2>
+              <p class="welcome-subtitle">Войдите в свой аккаунт</p>
             </div>
-            <div class="row justify-content-center">
-              <div class="col-md-10 col-lg-10">
-                <div class="login-wrap p-0">
-                  <form class="form-signin" (ngSubmit)="onSubmit()" #loginForm="ngForm">
-                    <div class="form-group">
-                      <input 
-                        type="text" 
-                        id="inputEmail" 
-                        class="form-control" 
-                        placeholder="Фамилия (Рус)" 
-                        [(ngModel)]="loginRequest.email"
-                        name="email"
-                        required>
-                    </div>
-                    <div class="form-group">
-                      <input 
-                        type="password" 
-                        name="password" 
-                        id="inputPassword" 
-                        class="form-control" 
-                        placeholder="Пароль" 
-                        [(ngModel)]="loginRequest.password"
-                        required>
-                      <span toggle="#password-field" class="fa fa-fw field-icon toggle-password fa-eye"></span>
-                    </div>
-                    <div class="form-group">
-                      <button 
-                        id="loginbtn" 
-                        type="submit"
-                        class="form-control btn btn-primary submit px-3"
-                        [disabled]="!loginForm.form.valid || isLoading">
-                        {{ isLoading ? 'Вход...' : 'Вход' }}
-                      </button>
-                    </div>
-                  </form>
 
-                  <div *ngIf="error" class="error-message text-center mt-3">
-                    <div class="alert alert-danger">
-                      {{ error }}
-                    </div>
+            <form class="login-form" (ngSubmit)="onSubmit()" #loginForm="ngForm">
+              <!-- Поле логина -->
+              <div class="form-group">
+                <label class="form-label">Логин</label>
+                <input 
+                  type="text" 
+                  class="form-control" 
+                  placeholder="Введите ваш логин" 
+                  [(ngModel)]="loginRequest.email"
+                  name="email"
+                  required
+                  autocomplete="username">
+                <div class="form-icon">
+                  <i class="fas fa-user"></i>
+                </div>
+              </div>
+
+              <!-- Поле пароля -->
+              <div class="form-group">
+                <label class="form-label">Пароль</label>
+                <input 
+                  type="password" 
+                  class="form-control" 
+                  placeholder="Введите ваш пароль" 
+                  [(ngModel)]="loginRequest.password"
+                  name="password"
+                  required
+                  autocomplete="current-password">
+                <div class="form-icon">
+                  <i class="fas fa-lock"></i>
+                </div>
+              </div>
+
+              <!-- Кнопка входа -->
+              <button 
+                type="submit"
+                class="login-btn"
+                [disabled]="!loginForm.form.valid || isLoading">
+                <span *ngIf="!isLoading">Войти в систему</span>
+                <span *ngIf="isLoading" class="loading-spinner">
+                  <i class="fas fa-spinner fa-spin"></i> Вход...
+                </span>
+              </button>
+
+              <!-- Демо подсказка -->
+              <div class="demo-hint" *ngIf="showDemoHint">
+                <div class="hint-header">
+                  <i class="fas fa-info-circle"></i>
+                  <span>Демо доступ</span>
+                </div>
+                <div class="hint-content">
+                  <div class="demo-account">
+                    <strong>Студент:</strong> student&#64;stemi.ru / 123456
+                  </div>
+                  <div class="demo-account">
+                    <strong>Администратор:</strong> admin&#64;stemi.ru / admin123
                   </div>
                 </div>
               </div>
+            </form>
+
+            <!-- Сообщение об ошибке -->
+            <div *ngIf="error" class="error-message">
+              <i class="fas fa-exclamation-triangle"></i>
+              {{ error }}
+            </div>
+
+            <!-- Футер карточки -->
+            <div class="card-footer">
+              <p class="support-text">
+                Техническая поддержка: 
+                <a href="tel:+78002224906" class="support-link">8 800 222-49-06</a>
+              </p>
             </div>
           </div>
-        </section>
+
+     
+        </div>
       </div>
     </body>
   `,
   styleUrls: ['./login.component.css']
 })
 export class LoginComponent {
-  loginRequest: LoginRequest = { email: '', password: '' };
+  loginRequest: LoginRequest = {
+    email: '',
+    password: ''
+  };
   isLoading = false;
   error = '';
+  showDemoHint = true;
 
   constructor(
     private authService: AuthService,
     private router: Router
-  ) {}
+  ) { }
 
   onSubmit(): void {
     if (this.isLoading) return;
@@ -95,13 +133,16 @@ export class LoginComponent {
     this.error = '';
 
     this.authService.login(this.loginRequest).subscribe({
-      next: () => {
-        this.router.navigate(['/students']);
+      next: (response) => {
+        if (this.authService.isStudent()) {
+          this.router.navigate(['/dashboard']);
+        } else if (this.authService.isAdmin()) {
+          this.router.navigate(['/admin']);
+        }
       },
       error: (error) => {
-        this.error = 'Ошибка входа. Проверьте логин и пароль.';
+        this.error = 'Неверный логин или пароль. Пожалуйста, проверьте введенные данные.';
         this.isLoading = false;
-        console.error('Login error:', error);
       },
       complete: () => {
         this.isLoading = false;

@@ -14,6 +14,7 @@ namespace Stemi.WebAPI.Data
 		public DbSet<Student> Students { get; set; }
 		public DbSet<Session> Sessions { get; set; }
 		public DbSet<Payment> Payments { get; set; }
+		public DbSet<User> Users { get; set; }
 
 		protected override void OnModelCreating(ModelBuilder modelBuilder)
 		{
@@ -65,6 +66,20 @@ namespace Stemi.WebAPI.Data
 				entity.HasKey(p => p.Id);
 				entity.HasIndex(p => p.StudentsId);
 				entity.HasIndex(p => p.PaymentDate);
+			});
+			// Конфигурации для User
+			modelBuilder.Entity<User>(entity =>
+			{
+				entity.HasKey(u => u.Id);
+				entity.HasIndex(u => u.Email).IsUnique();
+
+				entity.Property(u => u.Roles)
+					.HasConversion(
+						v => string.Join(',', v),
+						v => v.Split(',', StringSplitOptions.RemoveEmptyEntries)
+							  .Select(Enum.Parse<UserRole>)
+							  .ToList()
+					);
 			});
 		}
 		public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
