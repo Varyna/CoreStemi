@@ -36,6 +36,12 @@
           },
           "configurations": {
             "production": {
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.prod.ts"
+                }
+              ],
               "budgets": [
                 {
                   "type": "initial",
@@ -51,6 +57,12 @@
               "outputHashing": "all"
             },
             "development": {
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.ts"
+                }
+              ],
               "buildOptimizer": false,
               "optimization": false,
               "vendorChunk": true,
@@ -64,7 +76,7 @@
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
           "options": {
-            "buildTarget": "stemi-ui:build", // ДОБАВЛЕНО ЭТО СВОЙСТВО
+            "buildTarget": "stemi-ui:build",
             "proxyConfig": "proxy.conf.json"
           },
           "configurations": {

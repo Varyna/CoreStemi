@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Stemi.WebAPI.Data;
+using Stemi.WebAPI.Features.Users.Commands;
 using Stemi.WebAPI.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -28,6 +29,10 @@ builder.Services.AddCors(options =>
 });
 builder.Services.AddScoped<IExcelParserService, ExcelParserService>();
 builder.Services.AddScoped<ILessonImportService, LessonImportService>();
+builder.Services.AddScoped<ImportUsersFromExcelCommandHandler>();
+builder.Services.AddScoped<IJwtService, JwtService>();
+builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

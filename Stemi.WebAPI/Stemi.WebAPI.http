@@ -1,6 +1,6 @@
 @Stemi.WebAPI_HostAddress = http://localhost:5147
 
-GET {{Stemi.WebAPI_HostAddress}}/weatherforecast/
+GET {{Stemi.WebAPI_HostAddress}}/api/Import/users/template
 Accept: application/json
 
 ###
