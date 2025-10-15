@@ -22,7 +22,7 @@ export const routes: Routes = [
     path: 'dashboard',
     component: StudentProfileComponent,
     canActivate: [RoleGuard],
-    data: { roles: [UserRole.STUDENT] },
+    data: { roles: [UserRole.Student] },
     children: [
       {
         path: '',
@@ -49,7 +49,7 @@ export const routes: Routes = [
     path: 'admin',
     component: AdminComponent,
     canActivate: [RoleGuard],
-    data: { roles: [UserRole.ADMIN] }
+    data: { roles: [UserRole.Admin] }
   },
 
   {

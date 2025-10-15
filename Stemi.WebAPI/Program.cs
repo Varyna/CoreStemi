@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Stemi.WebAPI.Data;
 using Stemi.WebAPI.Features.Users.Commands;
 using Stemi.WebAPI.Services;
@@ -20,13 +20,27 @@ builder.Services.AddMediatR(cfg =>
 // Add CORS
 builder.Services.AddCors(options =>
 {
-	options.AddPolicy("AllowAngular", policy =>
+	options.AddDefaultPolicy(policy =>
 	{
-		policy.WithOrigins("http://localhost:4200")
+		policy.WithOrigins(
+			"http://localhost:4200",
+			"https://localhost:4200",
+			"http://127.0.0.1:4200",
+			"https://127.0.0.1:4200"
+		)
+		.AllowAnyHeader()
+		.AllowAnyMethod()
+		.AllowCredentials();
+	});
+
+	options.AddPolicy("AllowAll", policy =>
+	{
+		policy.AllowAnyOrigin()
 			  .AllowAnyHeader()
 			  .AllowAnyMethod();
 	});
 });
+
 builder.Services.AddScoped<IExcelParserService, ExcelParserService>();
 builder.Services.AddScoped<ILessonImportService, LessonImportService>();
 builder.Services.AddScoped<ImportUsersFromExcelCommandHandler>();
@@ -34,7 +48,7 @@ builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
 
 var app = builder.Build();
-
+app.UseCors();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
@@ -42,7 +56,6 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
 app.UseAuthorization();
 
 app.MapControllers();

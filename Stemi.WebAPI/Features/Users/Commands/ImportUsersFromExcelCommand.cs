@@ -1,5 +1,6 @@
 ﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using NPOI.HSSF.UserModel;
 using NPOI.SS.UserModel;
 using NPOI.XSSF.UserModel;
@@ -11,7 +12,7 @@ using System.Globalization;
 namespace Stemi.WebAPI.Features.Users.Commands
 {
 	
-		public record ImportUsersFromExcelCommand(Stream FileStream, string FileName) : IRequest<UserImportResult>;
+	public record ImportUsersFromExcelCommand(Stream FileStream, string FileName) : IRequest<UserImportResult>;
 	public class ImportUsersFromExcelCommandHandler : IRequestHandler<ImportUsersFromExcelCommand, UserImportResult>
 	{
 		private readonly ApplicationDbContext _context;
@@ -81,6 +82,7 @@ namespace Stemi.WebAPI.Features.Users.Commands
 		{
 			var users = new List<UserImportDto>();
 			var rowCount = worksheet.LastRowNum + 1;
+			var emailSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
 			if (rowCount < 2)
 			{
@@ -140,6 +142,7 @@ namespace Stemi.WebAPI.Features.Users.Commands
 							? GetCellValue(row, headers["roles"])?.Trim() ?? "Student"
 							: "Student"
 					};
+
 					// Валидация базовых полей
 					if (string.IsNullOrWhiteSpace(userDto.UserName))
 					{
@@ -159,13 +162,14 @@ namespace Stemi.WebAPI.Features.Users.Commands
 						continue;
 					}
 
-					// Валидация email
-					if (!IsValidEmail(userDto.Email))
+					// Проверка на дубликаты в файле
+					if (emailSet.Contains(userDto.Email))
 					{
-						result.Errors.Add($"Строка {rowIndex + 1}: Некорректный формат email");
+						result.Errors.Add($"Строка {rowIndex + 1}: Дубликат email в файле: {userDto.Email}");
 						continue;
 					}
 
+					emailSet.Add(userDto.Email);
 					users.Add(userDto);
 				}
 				catch (Exception ex)
@@ -174,7 +178,6 @@ namespace Stemi.WebAPI.Features.Users.Commands
 					result.Errors.Add($"Строка {rowIndex + 1}: Ошибка обработки данных");
 				}
 			}
-
 			return users;
 		}
 		private string? GetCellValue(IRow row, int columnIndex)
@@ -254,76 +257,171 @@ namespace Stemi.WebAPI.Features.Users.Commands
 		}
 		private async Task ImportUsers(List<UserImportDto> usersToImport, UserImportResult result, CancellationToken cancellationToken)
 		{
-			// Используем транзакцию для целостности данных
+			// Обрабатываем дубликаты ВНУТРИ файла импорта
+			var processedEmails = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+			var duplicateEmailsInFile = new HashSet<string>();
+
+			// Фильтруем дубликаты внутри файла
+			var uniqueUsersToImport = new List<UserImportDto>();
+
+			foreach (var userDto in usersToImport)
+			{
+				var normalizedEmail = userDto.Email.ToLower().Trim();
+
+				if (processedEmails.Contains(normalizedEmail))
+				{
+					// Найден дубликат в файле импорта
+					duplicateEmailsInFile.Add(normalizedEmail);
+					result.Errors.Add($"Дубликат email в файле: {userDto.Email}");
+					result.Failed++;
+					continue;
+				}
+
+				processedEmails.Add(normalizedEmail);
+				uniqueUsersToImport.Add(userDto);
+			}
+
+			// Логируем дубликаты в файле
+			if (duplicateEmailsInFile.Any())
+			{
+				_logger.LogWarning("Найдены дубликаты email в файле импорта: {Duplicates}",
+					string.Join(", ", duplicateEmailsInFile));
+			}
+
+			// Получаем существующих пользователей по email
+			var existingUsers = await _context.Users
+				.Where(u => uniqueUsersToImport.Select(ui => ui.Email.ToLower()).Contains(u.Email.ToLower()))
+				.ToDictionaryAsync(u => u.Email.ToLower(), u => u, cancellationToken);
+
 			using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
 
 			try
 			{
-				foreach (var userDto in usersToImport)
+				foreach (var userDto in uniqueUsersToImport)
 				{
 					try
 					{
-						// Проверка уникальности email и username
-						var emailExists = await _context.Users.AnyAsync(u => u.Email == userDto.Email, cancellationToken);
-						if (emailExists)
+						var normalizedEmail = userDto.Email.ToLower();
+
+						if (existingUsers.TryGetValue(normalizedEmail, out var existingUser))
 						{
-							result.Errors.Add($"Пользователь с email {userDto.Email} уже существует");
-							result.Failed++;
-							continue;
+							// ОБНОВЛЯЕМ существующего пользователя
+							existingUser.UserName = userDto.UserName;
+							existingUser.PasswordHash = HashPassword(userDto.Password);
+							existingUser.Roles = ParseRoles(userDto.Roles);
+							existingUser.UpdatedAt = DateTime.UtcNow;
+
+							result.Updated++;
+							result.ImportedUsers.Add(existingUser);
+
+							_logger.LogInformation("Обновлен пользователь: {Email}", userDto.Email);
 						}
-
-						var userNameExists = await _context.Users.AnyAsync(u => u.UserName == userDto.UserName, cancellationToken);
-						if (userNameExists)
+						else
 						{
-							result.Errors.Add($"Пользователь с именем {userDto.UserName} уже существует");
-							result.Failed++;
-							continue;
+							// СОЗДАЕМ нового пользователя
+							// Дополнительная проверка на случай конкурентности
+							var emailExists = await _context.Users
+								.AnyAsync(u => u.Email.ToLower() == normalizedEmail, cancellationToken);
+
+							if (emailExists)
+							{
+								result.Errors.Add($"Пользователь с email {userDto.Email} уже существует в базе данных");
+								result.Failed++;
+								continue;
+							}
+
+							var user = new User
+							{
+								UserName = userDto.UserName,
+								Email = userDto.Email,
+								PasswordHash = HashPassword(userDto.Password),
+								Roles = ParseRoles(userDto.Roles),
+								CreatedAt = DateTime.UtcNow
+							};
+
+							_context.Users.Add(user);
+							result.ImportedUsers.Add(user);
+							result.SuccessfullyImported++;
+
+							_logger.LogInformation("Создан новый пользователь: {Email}", userDto.Email);
 						}
-
-						// Парсинг ролей
-						var roles = ParseRoles(userDto.Roles);
-						if (!roles.Any())
-						{
-							roles = new List<UserRole> { UserRole.Student };
-						}
-
-						// Хеширование пароля
-						var passwordHash = HashPassword(userDto.Password);
-
-						var user = new User
-						{
-							UserName = userDto.UserName,
-							Email = userDto.Email,
-							PasswordHash = passwordHash,
-							Roles = roles,
-							CreatedAt = DateTime.UtcNow
-						};
-
-						_context.Users.Add(user);
-						result.ImportedUsers.Add(user);
 					}
 					catch (Exception ex)
 					{
-						_logger.LogError(ex, "Ошибка при подготовке импорта пользователя {UserName}", userDto.UserName);
-						result.Errors.Add($"Ошибка импорта пользователя {userDto.UserName}: {ex.Message}");
+						_logger.LogError(ex, "Ошибка при обработке пользователя {UserName}", userDto.UserName);
+						result.Errors.Add($"Ошибка обработки пользователя {userDto.UserName}: {ex.Message}");
 						result.Failed++;
 					}
 				}
 
-				// Сохраняем всех пользователей одним вызовом
-				await _context.SaveChangesAsync(cancellationToken);
-				await transaction.CommitAsync(cancellationToken);
+				// Сохраняем все изменения с обработкой исключений
+				try
+				{
+					await _context.SaveChangesAsync(cancellationToken);
+					await transaction.CommitAsync(cancellationToken);
 
-				result.SuccessfullyImported = result.ImportedUsers.Count;
+					_logger.LogInformation("Импорт завершен: создано {Created}, обновлено {Updated}, ошибок {Failed}",
+						result.SuccessfullyImported, result.Updated, result.Failed);
+				}
+				catch (DbUpdateException dbEx)
+				{
+					// Обрабатываем ошибки сохранения более детально
+					await HandleSaveChangesException(dbEx, result, uniqueUsersToImport.Count);
+					throw; // Пробрасываем исключение для внешнего catch
+				}
+			}
+			catch (DbUpdateException dbEx)
+			{
+				await transaction.RollbackAsync(cancellationToken);
+
+				if (dbEx.InnerException is PostgresException pgEx && pgEx.SqlState == "23505")
+				{
+					var constraintName = pgEx.ConstraintName;
+					var detailedMessage = constraintName switch
+					{
+						"IX_Users_Email" => "Обнаружены дублирующиеся email-адреса. Проверьте файл на уникальность email.",
+						"IX_Users_UserName" => "Обнаружены дублирующиеся имена пользователей. Проверьте файл на уникальность имен.",
+						_ => "Обнаружены дублирующиеся данные. Проверьте файл на уникальность."
+					};
+
+					_logger.LogError(dbEx, "Нарушение уникальности при импорте пользователей: {Constraint}", constraintName);
+					result.Errors.Add(detailedMessage);
+				}
+				else
+				{
+					_logger.LogError(dbEx, "Ошибка базы данных при импорте пользователей");
+					result.Errors.Add($"Ошибка базы данных: {dbEx.Message}");
+				}
+
+				result.Failed = uniqueUsersToImport.Count;
+				result.SuccessfullyImported = 0;
+				result.Updated = 0;
+				result.ImportedUsers.Clear();
 			}
 			catch (Exception ex)
 			{
 				await transaction.RollbackAsync(cancellationToken);
-				_logger.LogError(ex, "Ошибка при сохранении импортированных пользователей");
+				_logger.LogError(ex, "Неожиданная ошибка при сохранении импортированных пользователей");
 				result.Errors.Add($"Ошибка при сохранении данных: {ex.Message}");
-				result.Failed += usersToImport.Count - result.Failed;
+				result.Failed = uniqueUsersToImport.Count;
 				result.SuccessfullyImported = 0;
+				result.Updated = 0;
 				result.ImportedUsers.Clear();
+			}
+		}
+
+		private async Task HandleSaveChangesException(DbUpdateException dbEx, UserImportResult result, int totalUsers)
+		{
+			if (dbEx.InnerException is PostgresException pgEx && pgEx.SqlState == "23505")
+			{
+				// Получаем детальную информацию об ошибке
+				var constraintName = pgEx.ConstraintName;
+				var tableName = pgEx.TableName;
+
+				_logger.LogError("Constraint violation: {Constraint} on table {Table}", constraintName, tableName);
+
+				// Можно добавить логику для определения конкретного проблемного email
+				result.Errors.Add($"Нарушение уникальности: {constraintName}. Возможно, в файле есть дубликаты или конфликты с существующими данными.");
 			}
 		}
 
