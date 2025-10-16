@@ -5,7 +5,7 @@
 		public int Id { get; set; }
 		public required string Subject { get; set; }
 		public required string Teacher { get; set; }
-
+		public int? Corpus {  get; set; }
 		public int DirectoryGroupsId { get; set; }
 		public required DirectoryGroups DirectoryGroup { get; set; }
 
