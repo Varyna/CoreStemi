@@ -11,8 +11,6 @@ import { TimetableComponent } from './components/student-profile/timetable/timet
 import { SessionComponent } from './components/student-profile/session/session.component';
 import { WelcomeContentComponent } from './components/student-profile/welcome-content/welcome-content.component';
 
-import { ScheduleComponent } from './components/schedule/schedule.component';
-
 export const routes: Routes = [
   {
     path: 'login',
@@ -45,15 +43,7 @@ export const routes: Routes = [
       }
     ]
   },
-  {
-    path: '', component: ScheduleComponent
-  },
-  {
-    path: 'schedule', component: ScheduleComponent
-  },
-  {
-    path: '**', redirectTo: ''
-  },
+
   // Административная часть
   {
     path: 'admin',
