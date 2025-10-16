@@ -1,3 +1,4 @@
+// admin.component.ts
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
@@ -9,6 +10,19 @@ import { DashboardComponent } from './dashboard/dashboard.component';
 import { UserManagementComponent } from './user-management/user-management.component';
 import { ImportModalComponent } from './import-modal/import-modal.component';
 import { NotificationComponent } from './notification/notification.component';
+
+interface Schedule {
+  id: number;
+  subjectName: string;
+  teacherName: string;
+  groupName: string;
+  classroom: string;
+  dayOfWeek: string;
+  startTime: string;
+  endTime: string;
+  lessonType: string;
+  corpus: number;
+}
 
 @Component({
   selector: 'app-admin',
@@ -40,9 +54,7 @@ import { NotificationComponent } from './notification/notification.component';
           <app-dashboard 
             *ngIf="currentSection === 'overview'"
             [users]="users"
-            (sectionChange)="showSection($event)"
-            (importDialog)="displayImportDialog = true"
-            (downloadTemplate)="downloadTemplate()">
+            (sectionChange)="showSection($event)">
           </app-dashboard>
 
           <app-user-management
@@ -52,19 +64,23 @@ import { NotificationComponent } from './notification/notification.component';
             [loading]="loading"
             (usersUpdate)="loadUsers()"
             (selectionChange)="onSelectionChange($event)"
-            (importDialog)="displayImportDialog = true"
-            (downloadTemplate)="downloadTemplate()"
+            (importDialog)="showImportDialog('users')"
+            (downloadTemplate)="downloadTemplate('users')"
             (deleteUsers)="deleteSelectedUsers($event)">
           </app-user-management>
+
+       
         </main>
       </div>
 
       <app-import-modal
-        [display]="displayImportDialog"
-        [loading]="importLoading"
-        (close)="onImportDialogHide()"
-        (import)="onImport($event)">
+        [display]="displayUserImportDialog"
+        [loading]="userImportLoading"
+        (close)="onUserImportDialogHide()"
+        (import)="onUserImport($event)">
       </app-import-modal>
+
+     
 
       <app-notification
         [notification]="notification"
@@ -73,33 +89,11 @@ import { NotificationComponent } from './notification/notification.component';
     </div>
   `,
   styles: [`
-    .dark-theme {
-      --bg-primary: #0f0f23;
-      --bg-secondary: #1a1b2e;
-      --bg-tertiary: #25253d;
-      --bg-card: #2d2d4d;
-      --bg-hover: #3a3a5d;
-      --text-primary: #ffffff;
-      --text-secondary: #a0a0c0;
-      --text-muted: #6c6c8c;
-      --border-color: #3a3a5d;
-      --border-light: #4a4a6d;
-      --primary: #6366f1;
-      --primary-hover: #5a5ee0;
-      --success: #10b981;
-      --warning: #f59e0b;
-      --danger: #ef4444;
-      --info: #06b6d4;
-      --gradient-primary: linear-gradient(135deg, #6366f1, #8b5cf6);
-      --gradient-card: linear-gradient(135deg, #2d2d4d, #25253d);
-    }
-
     .admin-dashboard { 
       min-height: 100vh; 
       background: var(--bg-primary);
       color: var(--text-primary);
     }
-
     .admin-layout { 
       display: flex; 
       max-width: 1400px; 
@@ -107,16 +101,9 @@ import { NotificationComponent } from './notification/notification.component';
       padding: 2rem; 
       gap: 2rem; 
     }
-
-    .admin-content { 
-      flex: 1; 
-    }
-
+    .admin-content { flex: 1; }
     @media (max-width: 1024px) {
-      .admin-layout {
-        flex-direction: column;
-        padding: 1rem;
-      }
+      .admin-layout { flex-direction: column; padding: 1rem; }
     }
   `]
 })
@@ -124,10 +111,15 @@ export class AdminComponent implements OnInit {
   currentUser: any = null;
   currentSection = 'overview';
   users: User[] = [];
+  schedules: Schedule[] = [];
   selectedUsers: User[] = [];
-  displayImportDialog = false;
-  importLoading = false;
+
+  displayUserImportDialog = false;
+  displayScheduleImportDialog = false;
+  userImportLoading = false;
+  scheduleImportLoading = false;
   loading = false;
+  scheduleLoading = false;
 
   notification = {
     show: false,
@@ -144,20 +136,16 @@ export class AdminComponent implements OnInit {
 
   ngOnInit(): void {
     this.currentUser = this.authService.getCurrentUser();
-
     if (!this.authService.isAdmin()) {
       this.router.navigate(['/dashboard']);
       return;
     }
-
     this.loadUsers();
+    this.loadSchedules();
   }
 
   showSection(section: string): void {
     this.currentSection = section;
-    if (section === 'users') {
-      this.loadUsers();
-    }
   }
 
   loadUsers(): void {
@@ -175,56 +163,97 @@ export class AdminComponent implements OnInit {
     });
   }
 
-  onSelectionChange(selectedUsers: User[]): void {
-    this.selectedUsers = selectedUsers;
+  loadSchedules(): void {
+    this.scheduleLoading = true;
+    setTimeout(() => {
+      this.schedules = [
+        {
+          id: 1,
+          subjectName: 'Математика',
+          teacherName: 'Иванов И.И.',
+          groupName: 'Группа 101',
+          classroom: 'Аудитория 301',
+          dayOfWeek: 'monday',
+          startTime: '09:00',
+          endTime: '10:30',
+          lessonType: 'lecture',
+          corpus: 1
+        }
+      ];
+      this.scheduleLoading = false;
+    }, 1000);
   }
 
-  onImportDialogHide(): void {
-    this.displayImportDialog = false;
+  showImportDialog(type: 'users' | 'schedule'): void {
+    if (type === 'users') {
+      this.displayUserImportDialog = true;
+    } else {
+      this.displayScheduleImportDialog = true;
+    }
   }
 
-  onImport(file: File): void {
-    if (!file) return;
+  onUserImportDialogHide(): void {
+    this.displayUserImportDialog = false;
+  }
 
-    this.importLoading = true;
+  onScheduleImportDialogHide(): void {
+    this.displayScheduleImportDialog = false;
+  }
+
+  onUserImport(file: File): void {
+    this.userImportLoading = true;
     this.userService.importUsersFromExcel(file).subscribe({
       next: (result) => {
-        this.importLoading = false;
-        this.displayImportDialog = false;
-
+        this.userImportLoading = false;
+        this.displayUserImportDialog = false;
         if (result.successfullyImported > 0) {
           this.showSuccess(`Успешно импортировано ${result.successfullyImported} пользователей`);
           this.loadUsers();
         }
-
         if (result.failed > 0) {
           this.showWarn(`Не удалось импортировать ${result.failed} пользователей`);
         }
       },
       error: (error) => {
-        console.error('Ошибка импорта:', error);
         this.showError('Ошибка при импорте пользователей');
-        this.importLoading = false;
+        this.userImportLoading = false;
       }
     });
   }
 
-  downloadTemplate(): void {
-    this.userService.downloadTemplate().subscribe({
-      next: (blob) => {
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'Users_Import_Template.xlsx';
-        a.click();
-        window.URL.revokeObjectURL(url);
-        this.showSuccess('Шаблон успешно скачан');
-      },
-      error: (error) => {
-        console.error('Ошибка скачивания шаблона:', error);
-        this.showError('Ошибка при скачивании шаблона');
-      }
-    });
+  onScheduleImport(file: File): void {
+    this.scheduleImportLoading = true;
+    setTimeout(() => {
+      this.scheduleImportLoading = false;
+      this.displayScheduleImportDialog = false;
+      this.showSuccess('Расписание успешно импортировано');
+      this.loadSchedules();
+    }, 2000);
+  }
+
+  downloadTemplate(type: 'users' | 'schedule'): void {
+    if (type === 'users') {
+      this.userService.downloadTemplate().subscribe({
+        next: (blob) => this.downloadBlob(blob, 'Users_Import_Template.xlsx'),
+        error: () => this.showError('Ошибка при скачивании шаблона')
+      });
+    } else {
+      const blob = new Blob([''], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      this.downloadBlob(blob, 'Schedule_Import_Template.xlsx');
+    }
+  }
+
+  deleteSchedule(schedule: Schedule): void {
+    this.scheduleLoading = true;
+    setTimeout(() => {
+      this.schedules = this.schedules.filter(s => s.id !== schedule.id);
+      this.scheduleLoading = false;
+      this.showSuccess('Занятие успешно удалено');
+    }, 500);
+  }
+
+  onSelectionChange(selectedUsers: User[]): void {
+    this.selectedUsers = selectedUsers;
   }
 
   deleteSelectedUsers(users: User[]): void {
@@ -239,10 +268,19 @@ export class AdminComponent implements OnInit {
       this.selectedUsers = [];
       this.loading = false;
     }).catch(error => {
-      console.error('Ошибка удаления:', error);
       this.showError('Ошибка при удалении пользователей');
       this.loading = false;
     });
+  }
+
+  private downloadBlob(blob: Blob, filename: string): void {
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    window.URL.revokeObjectURL(url);
+    this.showSuccess('Шаблон успешно скачан');
   }
 
   private showSuccess(message: string): void {
@@ -258,16 +296,8 @@ export class AdminComponent implements OnInit {
   }
 
   private showNotification(type: string, title: string, message: string): void {
-    this.notification = {
-      show: true,
-      type,
-      title,
-      message
-    };
-
-    setTimeout(() => {
-      this.hideNotification();
-    }, 5000);
+    this.notification = { show: true, type, title, message };
+    setTimeout(() => this.hideNotification(), 5000);
   }
 
   hideNotification(): void {
