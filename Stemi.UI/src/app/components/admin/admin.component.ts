@@ -199,6 +199,12 @@ export class AdminComponent implements OnInit {
 
         if (result.failed > 0) {
           this.showWarn(`Не удалось импортировать ${result.failed} пользователей`);
+
+          // Показать ошибки если есть
+          if (result.errors && result.errors.length > 0) {
+            const errorMessage = result.errors.slice(0, 5).join(', '); // Показываем первые 5 ошибок
+            this.showWarn(`Ошибки: ${errorMessage}`);
+          }
         }
       },
       error: (error) => {

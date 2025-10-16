@@ -1,40 +1,44 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpParams, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { catchError, map } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 
 export interface User {
   id: string;
   userName: string;
   email: string;
-  roles: string[];
+  roles: string[]; // или UserRole[] если используете enum
   createdAt: string;
+  updatedAt: string;
+  status?: string;
+}
+
+export interface UserListResponse {
+  users: User[];
+  totalCount: number;
 }
 
 export interface UserImportResult {
-  totalRows: number;
   successfullyImported: number;
   failed: number;
   errors: string[];
-  importedUsers: User[];
-  hasMoreErrors?: boolean;
 }
 
 @Injectable({
   providedIn: 'root'
 })
 export class UserService {
-  // Автоматически определяем URL в зависимости от environment
   private apiUrl = environment.production
-    ? `${environment.apiUrl}/api`  // Для production: полный URL
-    : '/api';                     // Для development: относительный путь (работает через proxy)
+    ? `${environment.apiUrl}/api`
+    : '/api';
 
   constructor(private http: HttpClient) { }
 
   // Получить всех пользователей
   getUsers(): Observable<User[]> {
-    return this.http.get<User[]>(`${this.apiUrl}/users`).pipe(
+    return this.http.get<UserListResponse>(`${this.apiUrl}/users`).pipe(
+      map(response => response.users),
       catchError(this.handleError)
     );
   }
@@ -42,27 +46,6 @@ export class UserService {
   // Получить пользователя по ID
   getUserById(id: string): Observable<User> {
     return this.http.get<User>(`${this.apiUrl}/users/${id}`).pipe(
-      catchError(this.handleError)
-    );
-  }
-
-  // Получить пользователей по роли
-  getUsersByRole(role: string): Observable<User[]> {
-    return this.http.get<User[]>(`${this.apiUrl}/users/role/${role}`).pipe(
-      catchError(this.handleError)
-    );
-  }
-
-  // Создать пользователя
-  createUser(user: Partial<User>): Observable<User> {
-    return this.http.post<User>(`${this.apiUrl}/users`, user).pipe(
-      catchError(this.handleError)
-    );
-  }
-
-  // Обновить пользователя
-  updateUser(id: string, user: Partial<User>): Observable<User> {
-    return this.http.put<User>(`${this.apiUrl}/users/${id}`, user).pipe(
       catchError(this.handleError)
     );
   }
@@ -79,16 +62,30 @@ export class UserService {
     const formData = new FormData();
     formData.append('file', file);
 
-    return this.http.post<UserImportResult>(`${this.apiUrl}/import/users/excel`, formData).pipe(
+    return this.http.post<UserImportResult>(`${this.apiUrl}/users/import`, formData).pipe(
       catchError(this.handleError)
     );
   }
 
   // Скачать шаблон для импорта
   downloadTemplate(): Observable<Blob> {
-    return this.http.get(`${this.apiUrl}/import/users/template`, {
+    return this.http.get(`${this.apiUrl}/users/template`, {
       responseType: 'blob'
     }).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  // Создать пользователя (если нужно)
+  createUser(user: Partial<User>): Observable<User> {
+    return this.http.post<User>(`${this.apiUrl}/users`, user).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  // Обновить пользователя (если нужно)
+  updateUser(id: string, user: Partial<User>): Observable<User> {
+    return this.http.put<User>(`${this.apiUrl}/users/${id}`, user).pipe(
       catchError(this.handleError)
     );
   }
@@ -107,7 +104,17 @@ export class UserService {
           errorMessage = 'Нет соединения с сервером. Проверьте подключение к интернету.';
           break;
         case 400:
-          errorMessage = 'Некорректный запрос. Проверьте введенные данные.';
+          // Пытаемся получить детальную ошибку от сервера
+          if (error.error && error.error.errors) {
+            const serverErrors = error.error.errors;
+            if (Array.isArray(serverErrors)) {
+              errorMessage = serverErrors.join(', ');
+            } else if (typeof serverErrors === 'string') {
+              errorMessage = serverErrors;
+            }
+          } else {
+            errorMessage = 'Некорректный запрос. Проверьте введенные данные.';
+          }
           break;
         case 401:
           errorMessage = 'Неавторизованный доступ. Требуется авторизация.';

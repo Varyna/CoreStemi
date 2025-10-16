@@ -1,6 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Stemi.WebAPI.Data;
 using Stemi.WebAPI.Features.Users.Commands;
+using Stemi.WebAPI.Mapping;
 using Stemi.WebAPI.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -46,7 +48,12 @@ builder.Services.AddScoped<ILessonImportService, LessonImportService>();
 builder.Services.AddScoped<ImportUsersFromExcelCommandHandler>();
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
-
+builder.Services.AddAutoMapper(cfg =>
+{
+	cfg.AddProfile<UserProfile>();
+	// Добавьте другие профили по мере необходимости
+	// cfg.AddProfile<OtherProfile>();
+}, typeof(Program).Assembly);
 var app = builder.Build();
 app.UseCors();
 // Configure the HTTP request pipeline.
