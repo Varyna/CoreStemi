@@ -5,10 +5,13 @@ import { LoginComponent } from './components/login/login.component';
 import { StudentProfileComponent } from './components/student-profile/student-profile.component';
 import { AdminComponent } from './components/admin/admin.component';
 import { UserRole } from './models/auth.model';
+
 // Импортируем компоненты для дочерних маршрутов
 import { TimetableComponent } from './components/student-profile/timetable/timetable.component';
 import { SessionComponent } from './components/student-profile/session/session.component';
 import { WelcomeContentComponent } from './components/student-profile/welcome-content/welcome-content.component';
+
+import { ScheduleComponent } from './components/schedule/schedule.component';
 
 export const routes: Routes = [
   {
@@ -42,8 +45,16 @@ export const routes: Routes = [
       }
     ]
   },
-
-  // Административная часть - ПЕРЕД catch-all маршрутами
+  {
+    path: '', component: ScheduleComponent
+  },
+  {
+    path: 'schedule', component: ScheduleComponent
+  },
+  {
+    path: '**', redirectTo: ''
+  },
+  // Административная часть
   {
     path: 'admin',
     component: AdminComponent,
@@ -51,7 +62,6 @@ export const routes: Routes = [
     data: { roles: [UserRole.Admin] }
   },
 
-  // Перенаправления и catch-all маршруты в КОНЦЕ
   {
     path: '',
     redirectTo: '/login',
