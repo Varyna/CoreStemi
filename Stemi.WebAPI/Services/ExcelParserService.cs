@@ -161,7 +161,6 @@ namespace Stemi.WebAPI.Services
 					// Продолжаем обработку следующих строк
 				}
 			}
-
 			_logger.LogInformation("Парсинг завершен. Найдено {LessonsCount} уроков", lessons.Count);
 			return ExcelParseResult.Success(lessons);
 		}

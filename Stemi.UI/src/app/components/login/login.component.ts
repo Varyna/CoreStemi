@@ -45,7 +45,6 @@ import { LoginRequest } from '../../models/auth.model';
                   <i class="fas fa-user"></i>
                 </div>
               </div>
-
               <!-- Поле пароля -->
               <div class="form-group">
                 <label class="form-label">Пароль</label>
@@ -61,7 +60,6 @@ import { LoginRequest } from '../../models/auth.model';
                   <i class="fas fa-lock"></i>
                 </div>
               </div>
-
               <!-- Кнопка входа -->
               <button 
                 type="submit"
@@ -72,30 +70,12 @@ import { LoginRequest } from '../../models/auth.model';
                   <i class="fas fa-spinner fa-spin"></i> Вход...
                 </span>
               </button>
-
-              <!-- Демо подсказка -->
-              <div class="demo-hint" *ngIf="showDemoHint">
-                <div class="hint-header">
-                  <i class="fas fa-info-circle"></i>
-                  <span>Демо доступ</span>
-                </div>
-                <div class="hint-content">
-                  <div class="demo-account">
-                    <strong>Студент:</strong> student&#64;stemi.ru / 123456
-                  </div>
-                  <div class="demo-account">
-                    <strong>Администратор:</strong> admin&#64;stemi.ru / admin123
-                  </div>
-                </div>
-              </div>
             </form>
-
             <!-- Сообщение об ошибке -->
             <div *ngIf="error" class="error-message">
               <i class="fas fa-exclamation-triangle"></i>
               {{ error }}
             </div>
-
             <!-- Футер карточки -->
             <div class="card-footer">
               <p class="support-text">
@@ -104,8 +84,6 @@ import { LoginRequest } from '../../models/auth.model';
               </p>
             </div>
           </div>
-
-     
         </div>
       </div>
     </body>
