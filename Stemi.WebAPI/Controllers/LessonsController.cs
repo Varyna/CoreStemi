@@ -23,16 +23,47 @@ namespace Stemi.WebAPI.Controllers
 		[HttpPost("ImportLessonsExcel")]
 		public async Task<ActionResult<ImportResultDto>> ImportLessonsExcel(IFormFile file)
 		{
-			if (file == null || file.Length == 0)
-				return BadRequest("Файл не выбран");
+			try
+			{
+				// Базовая проверка
+				if (file == null || file.Length == 0)
+					return BadRequest("Файл не выбран");
 
-			if (!Path.GetExtension(file.FileName).Equals(".xlsx", StringComparison.OrdinalIgnoreCase))
-				return BadRequest("Поддерживаются только .xlsx файлы");
+				// Проверка размера файла (например, 10MB максимум)
+				if (file.Length > 10 * 1024 * 1024)
+					return BadRequest("Размер файла не должен превышать 10MB");
 
-			var command = new ImportLessonsFromExcelCommand { File = file };
-			var result = await _mediator.Send(command);
+				// Проверка расширения
+				var extension = Path.GetExtension(file.FileName);
+				if (!extension.Equals(".xlsx", StringComparison.OrdinalIgnoreCase))
+					return BadRequest("Поддерживаются только .xlsx файлы");
 
-			return Ok(result);
+				
+				if (!IsValidExcelFile(file))
+					return BadRequest("Файл не является корректным Excel файлом");
+
+				var command = new ImportLessonsFromExcelCommand { File = file };
+				var result = await _mediator.Send(command);
+				
+
+				return Ok(result);
+			}
+			catch (Exception ex)
+			{
+			
+				return StatusCode(500, "Произошла внутренняя ошибка сервера");
+			}
+		}
+		private bool IsValidExcelFile(IFormFile file)
+		{
+			// Проверка MIME-type
+			var allowedContentTypes = new[]
+			{
+		"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+		"application/octet-stream" // иногда браузеры отправляют так
+    };
+
+			return allowedContentTypes.Contains(file.ContentType.ToLower());
 		}
 		[HttpGet]
 		public async Task<ActionResult<List<LessonDto>>> GetLessons()

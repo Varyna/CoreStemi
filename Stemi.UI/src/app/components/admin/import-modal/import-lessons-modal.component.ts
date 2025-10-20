@@ -413,8 +413,43 @@ export class ImportLessonsModalComponent {
   onFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files.length > 0) {
-      this.selectedFile = input.files[0];
+      const file = input.files[0];
+
+      // ✅ Валидация типа файла
+      const allowedTypes = [
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'application/vnd.ms-excel'
+      ];
+
+      if (!allowedTypes.includes(file.type) && !file.name.match(/\.(xlsx|xls)$/i)) {
+        alert('Пожалуйста, выберите файл Excel (.xlsx или .xls)');
+        input.value = ''; // Очищаем input
+        return;
+      }
+
+      // ✅ Валидация размера файла (10MB)
+      const maxSize = 10 * 1024 * 1024;
+      if (file.size > maxSize) {
+        alert('Размер файла не должен превышать 10MB');
+        input.value = '';
+        return;
+      }
+
+      // ✅ Валидация имени файла (должно содержать дату)
+      if (!this.isValidFileName(file.name)) {
+        alert('Имя файла должно содержать дату понедельника в формате ДД.ММ.ГГГГ\nПример: 02.12.2024.xlsx');
+        input.value = '';
+        return;
+      }
+
+      this.selectedFile = file;
     }
+  }
+
+  // ✅ Проверка имени файла на наличие даты
+  private isValidFileName(fileName: string): boolean {
+    const dateRegex = /\d{2}\.\d{2}\.\d{4}/;
+    return dateRegex.test(fileName);
   }
 
   clearFile(): void {

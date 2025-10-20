@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using NPOI.SS.UserModel;
 using NPOI.XSSF.UserModel;
+using NPOI.HSSF.UserModel;
 using Stemi.WebAPI.Data;
 using Stemi.WebAPI.Features.Lessons.Commands.ImportLessonsFromExcel;
 using Stemi.WebAPI.Models.Entities;
@@ -12,6 +13,7 @@ namespace Stemi.WebAPI.Services
 	{
 		Task<ExcelParseResult> ParseExcelFileAsync(ExcelImportDto excelData);
 	}
+
 	public class ExcelParserService : IExcelParserService
 	{
 		private readonly ApplicationDbContext _context;
@@ -22,23 +24,30 @@ namespace Stemi.WebAPI.Services
 			_context = context;
 			_logger = logger;
 		}
+
 		public async Task<ExcelParseResult> ParseExcelFileAsync(ExcelImportDto excelData)
 		{
 			try
 			{
+				_logger.LogInformation("Начало обработки Excel файла");
+
 				// Валидация входных данных
 				var validationResult = ValidateExcelData(excelData);
 				if (!validationResult.IsValid)
 				{
+					_logger.LogWarning("Валидация файла не пройдена: {ErrorMessage}", validationResult.ErrorMessage);
 					return ExcelParseResult.Failure(validationResult.ErrorMessage);
 				}
+
 				IWorkbook workbook;
 				try
 				{
 					workbook = await CreateWorkbookAsync(excelData.FileStream);
+					_logger.LogInformation("Workbook успешно создан");
 				}
 				catch (Exception ex) when (ex is ICSharpCode.SharpZipLib.Zip.ZipException ||
-										 ex is InvalidOperationException)
+										  ex is InvalidOperationException ||
+										  ex is NPOI.OpenXml4Net.Exceptions.InvalidFormatException)
 				{
 					_logger.LogError(ex, "Ошибка чтения Excel файла");
 					return ExcelParseResult.Failure("Невозможно прочитать Excel файл. Файл может быть поврежден или иметь неверный формат.");
@@ -70,83 +79,62 @@ namespace Stemi.WebAPI.Services
 			if (excelData.FileStream.Length < 100)
 				return ExcelValidationResult.Invalid("Файл слишком мал для Excel файла");
 
+			
+
 			return ExcelValidationResult.Valid();
 		}
 
 		private async Task<IWorkbook> CreateWorkbookAsync(Stream fileStream)
 		{
-			// Сохраняем позицию потока
-			var originalPosition = fileStream.Position;
+			// Создаем копию потока в памяти для надежности
+			using var memoryStream = new MemoryStream();
+
+			// Сбрасываем позицию исходного потока
+			fileStream.Seek(0, SeekOrigin.Begin);
+			await fileStream.CopyToAsync(memoryStream);
+			memoryStream.Seek(0, SeekOrigin.Begin);
+
 			try
 			{
-				// Проверяем сигнатуру файла
-				if (!IsValidExcelFile(fileStream))
-				{
-					throw new InvalidOperationException("Неверная сигнатура файла");
-				}
-
-				// Сбрасываем позицию потока
-				fileStream.Seek(0, SeekOrigin.Begin);
-
-				// Пытаемся создать workbook
-				return new XSSFWorkbook(fileStream);
+				// Пробуем как .xlsx (новый формат)
+				_logger.LogInformation("Попытка открыть файл как .xlsx");
+				return new XSSFWorkbook(memoryStream);
 			}
-			catch (ICSharpCode.SharpZipLib.Zip.ZipException zipEx)
+			catch (Exception ex) when (ex is ICSharpCode.SharpZipLib.Zip.ZipException ||
+									  ex is InvalidOperationException ||
+									  ex is NPOI.OpenXml4Net.Exceptions.InvalidFormatException)
 			{
-				_logger.LogWarning(zipEx, "Ошибка ZIP при чтении Excel файла, пробуем альтернативный метод");
+				_logger.LogWarning(ex, "Ошибка при чтении как .xlsx, пробуем как .xls");
 
-				// Альтернативный метод: создаем копию потока в памяти
-				fileStream.Seek(0, SeekOrigin.Begin);
-				using var memoryStream = new MemoryStream();
-				await fileStream.CopyToAsync(memoryStream);
-				memoryStream.Seek(0, SeekOrigin.Begin);
-
+				// Пробуем как .xls (старый формат)
 				try
 				{
-					return new XSSFWorkbook(memoryStream);
+					memoryStream.Seek(0, SeekOrigin.Begin);
+					return new HSSFWorkbook(memoryStream);
 				}
-				catch
+				catch (Exception innerEx)
 				{
-					throw new InvalidOperationException("Файл поврежден и не может быть прочитан");
+					_logger.LogError(innerEx, "Оба формата не сработали");
+					throw new InvalidOperationException($"Файл не является поддерживаемым форматом Excel (.xlsx или .xls): {innerEx.Message}");
 				}
 			}
-			finally
-			{
-				// Восстанавливаем позицию потока
-				fileStream.Seek(originalPosition, SeekOrigin.Begin);
-			}
 		}
 
-		private bool IsValidExcelFile(Stream stream)
-		{
-			try
-			{
-				var originalPosition = stream.Position;
-				var signature = new byte[4];
-
-				var bytesRead = stream.Read(signature, 0, 4);
-				stream.Seek(originalPosition, SeekOrigin.Begin);
-
-				if (bytesRead < 4)
-					return false;
-
-				// Проверяем сигнатуру ZIP файла (PK\x03\x04)
-				return signature[0] == 0x50 && signature[1] == 0x4B &&
-					   signature[2] == 0x03 && signature[3] == 0x04;
-			}
-			catch
-			{
-				return false;
-			}
-		}
+	
 
 		private async Task<ExcelParseResult> ParseWorkbookAsync(IWorkbook workbook, DateTime weekStartDate)
 		{
+			_logger.LogInformation("Начало парсинга workbook. Количество листов: {SheetCount}", workbook.NumberOfSheets);
+
 			var sheet = workbook.GetSheetAt(0);
 			if (sheet == null)
 			{
+				_logger.LogWarning("Workbook не содержит листов");
 				return ExcelParseResult.Failure("Excel файл не содержит листов");
 			}
+
+			_logger.LogInformation("Обработка листа: {SheetName}, строк: {RowCount}",
+				sheet.SheetName, sheet.LastRowNum);
 
 			var directoryData = await GetDirectoryDataAsync();
 			var lessons = new List<Lesson>();
@@ -174,11 +162,14 @@ namespace Stemi.WebAPI.Services
 				}
 			}
 
+			_logger.LogInformation("Парсинг завершен. Найдено {LessonsCount} уроков", lessons.Count);
 			return ExcelParseResult.Success(lessons);
 		}
 
 		private async Task<DirectoryData> GetDirectoryDataAsync()
 		{
+			_logger.LogInformation("Загрузка справочных данных из БД");
+
 			return new DirectoryData
 			{
 				Cabinets = await _context.DirectoryCabinets.AsNoTracking().ToListAsync(),
@@ -190,8 +181,10 @@ namespace Stemi.WebAPI.Services
 		private static string UpdateCurrentTeacher(IRow row, string currentTeacher)
 		{
 			var teacherCell = row.GetCell(1);
-			return !string.IsNullOrEmpty(teacherCell?.ToString())
-				? teacherCell.ToString()
+			var teacherValue = GetCellValue(teacherCell);
+
+			return !string.IsNullOrEmpty(teacherValue)
+				? teacherValue
 				: currentTeacher;
 		}
 
@@ -232,13 +225,18 @@ namespace Stemi.WebAPI.Services
 
 		private static (string GroupName, string CabinetName) ParseGroupAndCabinet(string entry)
 		{
-			var groupEndIndex = entry.IndexOf(' ');
-			if (groupEndIndex == -1)
-				return (entry, "");
+			var trimmedEntry = entry.Trim();
+			var groupEndIndex = trimmedEntry.IndexOf(' ');
 
-			var groupName = entry[..groupEndIndex];
-			var cabinetName = entry[(groupEndIndex + 1)..]
-				.Replace(" (", "")
+			if (groupEndIndex == -1)
+				return (trimmedEntry, "");
+
+			var groupName = trimmedEntry[..groupEndIndex];
+			var cabinetPart = trimmedEntry[(groupEndIndex + 1)..].Trim();
+
+			// Убираем скобки если есть
+			var cabinetName = cabinetPart
+				.Replace("(", "")
 				.Replace(")", "")
 				.Trim();
 
@@ -252,8 +250,23 @@ namespace Stemi.WebAPI.Services
 			var cabinet = directoryData.Cabinets.FirstOrDefault(c => c.Name == cabinetName);
 			var time = directoryData.Times.FirstOrDefault(t => t.Id == lectureNumber);
 
-			if (group == null || cabinet == null || time == null)
+			if (group == null)
+			{
+				_logger.LogWarning("Группа не найдена: {GroupName}", groupName);
 				return null;
+			}
+
+			if (cabinet == null)
+			{
+				_logger.LogWarning("Кабинет не найден: {CabinetName}", cabinetName);
+				return null;
+			}
+
+			if (time == null)
+			{
+				_logger.LogWarning("Время не найдено для номера пары: {LectureNumber}", lectureNumber);
+				return null;
+			}
 
 			return new Lesson
 			{
@@ -269,9 +282,12 @@ namespace Stemi.WebAPI.Services
 
 		private static int GetLastCellNum(ISheet sheet)
 		{
+			var headerRow = sheet.GetRow(1);
+			if (headerRow == null) return 50;
+
 			for (int i = 1; i < 100; i++)
 			{
-				var cellValue = sheet.GetRow(1)?.GetCell(i)?.ToString();
+				var cellValue = headerRow.GetCell(i)?.ToString();
 				if (cellValue?.Contains("Суббота") == true)
 					return i + 15;
 			}
@@ -296,7 +312,25 @@ namespace Stemi.WebAPI.Services
 
 		private static string GetCellValue(ICell cell)
 		{
-			return cell?.ToString()?.Trim() ?? "";
+			if (cell == null) return "";
+
+			try
+			{
+				return cell.CellType switch
+				{
+					CellType.String => cell.StringCellValue?.Trim() ?? "",
+					CellType.Numeric => DateUtil.IsCellDateFormatted(cell)
+						? cell.DateCellValue.ToString()
+						: cell.NumericCellValue.ToString().Trim(),
+					CellType.Boolean => cell.BooleanCellValue.ToString(),
+					CellType.Formula => cell.ToString()?.Trim() ?? "",
+					_ => cell.ToString()?.Trim() ?? ""
+				};
+			}
+			catch
+			{
+				return cell.ToString()?.Trim() ?? "";
+			}
 		}
 	}
 
@@ -315,8 +349,8 @@ namespace Stemi.WebAPI.Services
 
 	public class DirectoryData
 	{
-		public List<DirectoryCabinets> Cabinets { get; set; }
-		public List<DirectoryGroups> Groups { get; set; }
-		public List<DirectoryTime> Times { get; set; }
+		public List<DirectoryCabinets> Cabinets { get; set; } = new();
+		public List<DirectoryGroups> Groups { get; set; } = new();
+		public List<DirectoryTime> Times { get; set; } = new();
 	}
 }
