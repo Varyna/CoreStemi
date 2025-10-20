@@ -3,12 +3,14 @@ import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
 import { UserService, User } from '../../services/user.service';
+import { LessonService, LessonDto, ImportResultDto } from '../../services/lesson.service';
 import { AdminHeaderComponent } from './admin-header/admin-header.component';
 import { AdminSidebarComponent } from './admin-sidebar/admin-sidebar.component';
 import { DashboardComponent } from './dashboard/dashboard.component';
 import { UserManagementComponent } from './user-management/user-management.component';
 import { ImportModalComponent } from './import-modal/import-modal.component';
 import { NotificationComponent } from './notification/notification.component';
+import { ImportLessonsModalComponent } from './import-modal/import-lessons-modal.component';
 
 @Component({
   selector: 'app-admin',
@@ -20,11 +22,12 @@ import { NotificationComponent } from './notification/notification.component';
     DashboardComponent,
     UserManagementComponent,
     ImportModalComponent,
-    NotificationComponent
+    NotificationComponent,
+    ImportLessonsModalComponent,
   ],
   template: `
     <div class="admin-dashboard dark-theme">
-      <app-admin-header 
+      <app-admin-header
         [currentUser]="currentUser"
         (logout)="logout()">
       </app-admin-header>
@@ -33,16 +36,19 @@ import { NotificationComponent } from './notification/notification.component';
         <app-admin-sidebar
           [currentSection]="currentSection"
           [usersCount]="users.length"
+          [lessonsCount]="lessons.length"
           (sectionChange)="showSection($event)">
         </app-admin-sidebar>
 
         <main class="admin-content">
-          <app-dashboard 
+          <app-dashboard
             *ngIf="currentSection === 'overview'"
             [users]="users"
             (sectionChange)="showSection($event)"
             (importDialog)="displayImportDialog = true"
-            (downloadTemplate)="downloadTemplate()">
+            (importLessonsDialog)="displayImportLessonsDialog = true"
+            (downloadTemplate)="downloadTemplate()"
+            (downloadLessonsTemplate)="downloadLessonsTemplate()">
           </app-dashboard>
 
           <app-user-management
@@ -56,15 +62,28 @@ import { NotificationComponent } from './notification/notification.component';
             (downloadTemplate)="downloadTemplate()"
             (deleteUsers)="deleteSelectedUsers($event)">
           </app-user-management>
+
+
         </main>
       </div>
 
+      <!-- Модальное окно импорта пользователей -->
       <app-import-modal
         [display]="displayImportDialog"
         [loading]="importLoading"
+        [importResult]="userImportResult"
         (close)="onImportDialogHide()"
-        (import)="onImport($event)">
+        (import)="onUserImport($event)">
       </app-import-modal>
+
+      <!-- Модальное окно импорта расписания -->
+      <app-import-lessons-modal
+        [display]="displayImportLessonsDialog"
+        [loading]="lessonsImportLoading"
+        [importResult]="lessonsImportResult"
+        (close)="onImportLessonsDialogHide()"
+        (import)="onLessonsImport($event)">
+      </app-import-lessons-modal>
 
       <app-notification
         [notification]="notification"
@@ -94,22 +113,22 @@ import { NotificationComponent } from './notification/notification.component';
       --gradient-card: linear-gradient(135deg, #2d2d4d, #25253d);
     }
 
-    .admin-dashboard { 
-      min-height: 100vh; 
+    .admin-dashboard {
+      min-height: 100vh;
       background: var(--bg-primary);
       color: var(--text-primary);
     }
 
-    .admin-layout { 
-      display: flex; 
-      max-width: 1400px; 
-      margin: 0 auto; 
-      padding: 2rem; 
-      gap: 2rem; 
+    .admin-layout {
+      display: flex;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 2rem;
+      gap: 2rem;
     }
 
-    .admin-content { 
-      flex: 1; 
+    .admin-content {
+      flex: 1;
     }
 
     @media (max-width: 1024px) {
@@ -124,10 +143,21 @@ export class AdminComponent implements OnInit {
   currentUser: any = null;
   currentSection = 'overview';
   users: User[] = [];
+  lessons: LessonDto[] = [];
   selectedUsers: User[] = [];
+
+  // Модальные окна
   displayImportDialog = false;
+  displayImportLessonsDialog = false;
+
+  // Состояние загрузки
   importLoading = false;
+  lessonsImportLoading = false;
   loading = false;
+
+  // Результаты импорта
+  userImportResult: any = null;
+  lessonsImportResult: ImportResultDto | null = null;
 
   notification = {
     show: false,
@@ -139,6 +169,7 @@ export class AdminComponent implements OnInit {
   constructor(
     private authService: AuthService,
     private userService: UserService,
+    private lessonService: LessonService,
     private router: Router
   ) { }
 
@@ -151,12 +182,16 @@ export class AdminComponent implements OnInit {
     }
 
     this.loadUsers();
+    this.loadLessons();
   }
 
   showSection(section: string): void {
     this.currentSection = section;
     if (section === 'users') {
       this.loadUsers();
+    }
+    if (section === 'schedule') {
+      this.loadLessons();
     }
   }
 
@@ -175,22 +210,39 @@ export class AdminComponent implements OnInit {
     });
   }
 
+  loadLessons(): void {
+    this.loading = true;
+    this.lessonService.getLessons().subscribe({
+      next: (lessons) => {
+        this.lessons = lessons;
+        this.loading = false;
+      },
+      error: (error) => {
+        console.error('Ошибка загрузки расписания:', error);
+        this.showError('Ошибка загрузки расписания');
+        this.loading = false;
+      }
+    });
+  }
+
   onSelectionChange(selectedUsers: User[]): void {
     this.selectedUsers = selectedUsers;
   }
 
+  // Обработчики для модального окна пользователей
   onImportDialogHide(): void {
     this.displayImportDialog = false;
+    this.userImportResult = null;
   }
 
-  onImport(file: File): void {
+  onUserImport(file: File): void {
     if (!file) return;
 
     this.importLoading = true;
     this.userService.importUsersFromExcel(file).subscribe({
       next: (result) => {
         this.importLoading = false;
-        this.displayImportDialog = false;
+        this.userImportResult = result;
 
         if (result.successfullyImported > 0) {
           this.showSuccess(`Успешно импортировано ${result.successfullyImported} пользователей`);
@@ -200,17 +252,53 @@ export class AdminComponent implements OnInit {
         if (result.failed > 0) {
           this.showWarn(`Не удалось импортировать ${result.failed} пользователей`);
 
-          // Показать ошибки если есть
           if (result.errors && result.errors.length > 0) {
-            const errorMessage = result.errors.slice(0, 5).join(', '); // Показываем первые 5 ошибок
+            const errorMessage = result.errors.slice(0, 5).join(', ');
             this.showWarn(`Ошибки: ${errorMessage}`);
           }
         }
       },
       error: (error) => {
-        console.error('Ошибка импорта:', error);
+        console.error('Ошибка импорта пользователей:', error);
         this.showError('Ошибка при импорте пользователей');
         this.importLoading = false;
+      }
+    });
+  }
+
+  // Обработчики для модального окна расписания
+  onImportLessonsDialogHide(): void {
+    this.displayImportLessonsDialog = false;
+    this.lessonsImportResult = null;
+  }
+
+  onLessonsImport(file: File): void {
+    if (!file) return;
+
+    this.lessonsImportLoading = true;
+    this.lessonService.importLessons(file).subscribe({
+      next: (result) => {
+        this.lessonsImportLoading = false;
+        this.lessonsImportResult = result;
+
+        if (result.successfullyImported > 0) {
+          this.showSuccess(`Успешно импортировано ${result.successfullyImported} занятий`);
+          this.loadLessons();
+        }
+
+        if (result.failed > 0) {
+          this.showWarn(`Не удалось импортировать ${result.failed} занятий`);
+
+          if (result.errors && result.errors.length > 0) {
+            const errorMessage = result.errors.slice(0, 5).join(', ');
+            this.showWarn(`Ошибки: ${errorMessage}`);
+          }
+        }
+      },
+      error: (error) => {
+        console.error('Ошибка импорта расписания:', error);
+        this.showError('Ошибка при импорте расписания');
+        this.lessonsImportLoading = false;
       }
     });
   }
@@ -224,13 +312,39 @@ export class AdminComponent implements OnInit {
         a.download = 'Users_Import_Template.xlsx';
         a.click();
         window.URL.revokeObjectURL(url);
-        this.showSuccess('Шаблон успешно скачан');
+        this.showSuccess('Шаблон пользователей успешно скачан');
       },
       error: (error) => {
         console.error('Ошибка скачивания шаблона:', error);
-        this.showError('Ошибка при скачивании шаблона');
+        this.showError('Ошибка при скачивании шаблона пользователей');
       }
     });
+  }
+
+  downloadLessonsTemplate(): void {
+    // Создаем CSV шаблон для расписания
+    const templateData = [
+      ['Subject', 'Teacher', 'GroupName', 'TimeName', 'NumberLecture', 'Date', 'CabinetName'],
+      ['Математика', 'Иванов И.И.', 'Группа 1', '09:00-10:30', '1', '2024-01-15', 'Аудитория 101'],
+      ['Физика', 'Петров П.П.', 'Группа 2', '10:45-12:15', '2', '2024-01-15', 'Аудитория 102'],
+      ['Программирование', 'Сидоров С.С.', 'Группа 3', '13:00-14:30', '3', '2024-01-15', 'Компьютерный класс 201']
+    ];
+
+    let csvContent = templateData.map(row =>
+      row.map(field => `"${field}"`).join(',')
+    ).join('\n');
+
+    const blob = new Blob(['\uFEFF' + csvContent], {
+      type: 'text/csv;charset=utf-8;'
+    });
+
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'Lessons_Import_Template.csv';
+    a.click();
+    window.URL.revokeObjectURL(url);
+    this.showSuccess('Шаблон расписания успешно скачан');
   }
 
   deleteSelectedUsers(users: User[]): void {

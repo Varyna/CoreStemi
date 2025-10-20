@@ -1,5 +1,4 @@
 ﻿using MediatR;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using NPOI.XSSF.UserModel;
 using Stemi.WebAPI.Exceptions;
@@ -203,6 +202,5 @@ namespace Stemi.WebAPI.Controllers
 				throw;
 			}
 		}
-
 	}
 }

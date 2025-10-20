@@ -14,5 +14,14 @@
 		public int Failed { get; set; }
 		public List<string> Errors { get; set; } = new();
 		public bool IsSuccess => Failed == 0;
+
+		public static ImportResultDto Failure(string errorMessage)
+		{
+			return new ImportResultDto
+			{
+				Errors = new List<string> { errorMessage }
+			};
+		}
+
 	}
 }

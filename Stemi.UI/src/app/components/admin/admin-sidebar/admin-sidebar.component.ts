@@ -11,31 +11,33 @@ import { CommonModule } from '@angular/common';
         <div class="sidebar-menu">
           <div class="menu-group">
             <div class="menu-title">Главная</div>
-            <a class="menu-item" [class.active]="currentSection === 'overview'" 
+            <a class="menu-item" [class.active]="currentSection === 'overview'"
                (click)="sectionChange.emit('overview')">
               <span class="menu-icon">📊</span>
               <span class="menu-text">Обзор системы</span>
             </a>
           </div>
-          
+
           <div class="menu-group">
             <div class="menu-title">Управление</div>
-            <a class="menu-item" [class.active]="currentSection === 'users'" 
+            <a class="menu-item" [class.active]="currentSection === 'users'"
                (click)="sectionChange.emit('users')">
               <span class="menu-icon">👥</span>
               <span class="menu-text">Пользователи</span>
               <span class="menu-badge">{{usersCount}}</span>
             </a>
-            <a class="menu-item">
+            <a class="menu-item" [class.active]="currentSection === 'schedule'"
+               (click)="sectionChange.emit('schedule')">
               <span class="menu-icon">📅</span>
               <span class="menu-text">Расписание</span>
+              <span class="menu-badge" *ngIf="lessonsCount > 0">{{lessonsCount}}</span>
             </a>
             <a class="menu-item">
               <span class="menu-icon">💰</span>
               <span class="menu-text">Финансы</span>
             </a>
           </div>
-          
+
           <div class="menu-group">
             <div class="menu-title">Аналитика</div>
             <a class="menu-item">
@@ -47,7 +49,7 @@ import { CommonModule } from '@angular/common';
               <span class="menu-text">Статистика</span>
             </a>
           </div>
-          
+
           <div class="menu-group">
             <div class="menu-title">Система</div>
             <a class="menu-item">
@@ -148,5 +150,6 @@ import { CommonModule } from '@angular/common';
 export class AdminSidebarComponent {
   @Input() currentSection!: string;
   @Input() usersCount!: number;
+  @Input() lessonsCount: number = 0;
   @Output() sectionChange = new EventEmitter<string>();
 }

@@ -68,8 +68,17 @@ import { User } from '../../../services/user.service';
           <button class="action-card" (click)="downloadTemplate.emit()">
             <div class="action-icon">📥</div>
             <div class="action-content">
-              <h4>Скачать шаблон</h4>
-              <p>Excel шаблон для массового импорта</p>
+              <h4>Скачать шаблон пользователей</h4>
+              <p>Excel шаблон для массового импорта пользователей</p>
+            </div>
+            <div class="action-arrow">→</div>
+          </button>
+          
+          <button class="action-card" (click)="downloadLessonsTemplate.emit()">
+            <div class="action-icon">📋</div>
+            <div class="action-content">
+              <h4>Скачать шаблон расписания</h4>
+              <p>Excel шаблон для импорта занятий</p>
             </div>
             <div class="action-arrow">→</div>
           </button>
@@ -77,8 +86,17 @@ import { User } from '../../../services/user.service';
           <button class="action-card" (click)="importDialog.emit()">
             <div class="action-icon">📊</div>
             <div class="action-content">
-              <h4>Импорт из Excel</h4>
-              <p>Массовое добавление пользователей</p>
+              <h4>Импорт пользователей</h4>
+              <p>Массовое добавление пользователей из Excel</p>
+            </div>
+            <div class="action-arrow">→</div>
+          </button>
+
+          <button class="action-card" (click)="importLessonsDialog.emit()">
+            <div class="action-icon">📅</div>
+            <div class="action-content">
+              <h4>Импорт расписания</h4>
+              <p>Массовое добавление занятий из Excel</p>
             </div>
             <div class="action-arrow">→</div>
           </button>
@@ -113,10 +131,17 @@ import { User } from '../../../services/user.service';
             </div>
           </div>
           <div class="activity-item">
-            <div class="activity-icon warning">⚙️</div>
+            <div class="activity-icon warning">📅</div>
+            <div class="activity-content">
+              <p>Расписание занятий обновлено</p>
+              <span class="activity-time">2 часа назад</span>
+            </div>
+          </div>
+          <div class="activity-item">
+            <div class="activity-icon info">⚙️</div>
             <div class="activity-content">
               <p>Системные настройки обновлены</p>
-              <span class="activity-time">2 часа назад</span>
+              <span class="activity-time">3 часа назад</span>
             </div>
           </div>
         </div>
@@ -309,6 +334,11 @@ import { User } from '../../../services/user.service';
       font-size: 1.25rem;
     }
 
+    .activity-icon.success { color: var(--success); }
+    .activity-icon.primary { color: var(--primary); }
+    .activity-icon.warning { color: var(--warning); }
+    .activity-icon.info { color: var(--info); }
+
     .activity-content {
       flex: 1;
     }
@@ -343,6 +373,8 @@ export class DashboardComponent {
   @Output() sectionChange = new EventEmitter<string>();
   @Output() importDialog = new EventEmitter<void>();
   @Output() downloadTemplate = new EventEmitter<void>();
+  @Output() importLessonsDialog = new EventEmitter<void>();
+  @Output() downloadLessonsTemplate = new EventEmitter<void>();
 
   getUsersByRole(role: string): User[] {
     return this.users.filter(user => user.roles.includes(role));

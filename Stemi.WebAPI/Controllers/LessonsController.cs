@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Stemi.WebAPI.Features.Lessons.Commands.CreateLesson;
 using Stemi.WebAPI.Features.Lessons.Commands.DeleteLesson;
+using Stemi.WebAPI.Features.Lessons.Commands.ImportLessonsFromExcel;
 using Stemi.WebAPI.Features.Lessons.Commands.UpdateLesson;
 using Stemi.WebAPI.Features.Lessons.Queries.GetLessonById;
 using Stemi.WebAPI.Features.Lessons.Queries.GetLessons;
@@ -19,7 +20,20 @@ namespace Stemi.WebAPI.Controllers
 		{
 			_mediator = mediator;
 		}
+		[HttpPost("ImportLessonsExcel")]
+		public async Task<ActionResult<ImportResultDto>> ImportLessonsExcel(IFormFile file)
+		{
+			if (file == null || file.Length == 0)
+				return BadRequest("Файл не выбран");
 
+			if (!Path.GetExtension(file.FileName).Equals(".xlsx", StringComparison.OrdinalIgnoreCase))
+				return BadRequest("Поддерживаются только .xlsx файлы");
+
+			var command = new ImportLessonsFromExcelCommand { File = file };
+			var result = await _mediator.Send(command);
+
+			return Ok(result);
+		}
 		[HttpGet]
 		public async Task<ActionResult<List<LessonDto>>> GetLessons()
 		{
